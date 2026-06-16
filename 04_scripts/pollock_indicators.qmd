@@ -1,0 +1,261 @@
+---
+title: "Pollock Indicators for Fall 2026 Data Update"
+# format:
+#   html:
+#     code-fold: true
+format:
+  pdf:
+    fig-width: 7
+    fig-height: 5
+execute:
+  echo: false
+---
+
+```{r setup}
+knitr::opts_chunk$set(
+  fig.height = 2.5,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+# Socioeconomic Indicators
+
+Commercial landings and revenue have hovered around -1 SD of the long term mean since 2015, with the exception for revenue in 2021. N vessels has steadily declined since the mid-2000s and is now below -1SD of the LT mean. Average price per pound and revenue per vessel have fluctuated in the past decade but have been near or above the LT mean.  
+
+```{r pollock-socioeco}
+pollock_socioeco <- here::here("02_intermediates/ATLANTICPOLLOCK_Commercial_Indicators_Master.csv")
+data <- read.csv(pollock_socioeco)
+```
+
+## Average price per pound
+
+```{r}
+avgprice <- data |>
+  dplyr::filter(INDICATOR_NAME == "AVGPRICE_ATLANTICPOLLOCK_2025_DOLlb") 
+
+NEesp2::plt_indicator(data = avgprice,
+                      ar = 1/4,
+                      include_trends = TRUE) 
+```
+
+## Total commercial landings (pounds)
+
+```{r}
+landings <- data |>
+  dplyr::filter(INDICATOR_NAME == "Commercial_ATLANTICPOLLOCK_Landings_LBS") 
+
+NEesp2::plt_indicator(data = landings,
+                      ar = 1/4,
+                      include_trends = TRUE)
+```
+
+## Total commercial revenue
+
+```{r}
+totalrev <- data |>
+  dplyr::filter(INDICATOR_NAME == "TOTALANNUALREV_ATLANTICPOLLOCK_2025Dols") 
+
+NEesp2::plt_indicator(data = totalrev,
+                      ar = 1/4,
+                      include_trends = TRUE)
+```
+
+## Number of commercial vessels
+
+```{r}
+nvessels <- data |>
+  dplyr::filter(INDICATOR_NAME == "N_Commercial_Vessels_Landing_ATLANTICPOLLOCK") 
+
+NEesp2::plt_indicator(data = nvessels,
+                      ar = 1/4,
+                      include_trends = TRUE)
+```
+
+## Average revenue per vessel ($USD2025)
+
+```{r}
+vesselrev <- data |>
+  dplyr::filter(INDICATOR_NAME == "AVGVESREVperYr_ATLANTICPOLLOCK_2025_DOLlb") 
+
+NEesp2::plt_indicator(data = vesselrev,
+                      ar = 1/4,
+                      include_trends = TRUE)
+```
+
+# Ecosystem Indicators
+
+## Bottom temperature
+
+Larval and juvenile occurrence fluctuates seasonally with bottom temperature. Inshore-offshore movements are linked to BT until they are 2 years old. 
+
+Small juveniles (YOY) move inshore in May and remain inshore until January, with the exception of southern Massachusetts Bay where they move offshore to escape high temps in June. Move offshore in January when temperatures drop to < 4C. Return inshore in May of year 2 when temps are >4C and then move offshore permanently in October.
+
+Monthly BT in the stock area has a long-term increase for all months. Highest mean BT occur in Oct-Nov, around 9 deg C. 
+
+```{r pollock-bt-data}
+url1 <- here::here("02_intermediates/ATLANTICPOLLOCK_hubert_bottomT.csv")
+url2 <- here::here("02_intermediates/ATLANTICPOLLOCK_glorys_bottomT.csv")
+```
+
+```{r, eval = file.exists(url1) & file.exists(url2), results='asis'}
+#| fig-width: 7
+#| fig-height: 9
+#| fig-align: center
+
+bt_data <- read.csv(url1) |>
+  dplyr::bind_rows(read.csv(url2)) |>
+  dplyr::mutate(
+    SEASON = dplyr::case_when(
+      MONTH %in% c(1, 2, 3)    ~ "Winter",
+      MONTH %in% c(4, 5, 6)    ~ "Spring",
+      MONTH %in% c(7, 8, 9)    ~ "Summer",
+      MONTH %in% c(10, 11, 12) ~ "Fall"
+    )
+  ) |>
+  dplyr::group_by(AREA, SEASON, YEAR, INDICATOR_NAME, INDICATOR_UNITS) |>
+  dplyr::summarise(DATA_VALUE = mean(DATA_VALUE, na.rm = TRUE), .groups = "drop") |>
+  dplyr::mutate(INDICATOR_NAME = "seasonal_bottomT") |>
+  dplyr::filter(YEAR >= 1970)
+
+NEesp2::plt_indicator(
+  data = bt_data,
+  ar = 1/4,
+  include_trends = FALSE
+) +
+  ggplot2::facet_grid(SEASON ~ .,
+                      scales = "free_y") +
+  ggplot2::geom_smooth(method = "lm", se = FALSE, color = "purple", linetype = "solid") +
+  ggplot2::geom_line() +
+  ggplot2::geom_point() 
+```
+
+## Sea surface temperatures 
+
+Spawning is linked to temperature between 4.5-8 degC. Spawning occurs from September - April on the Scotian Shelf and November - February in the Gulf of Maine. Spawning peaks in Dec/Jan. 
+
+```{r}
+sst <- here::here("02_intermediates/ATLANTICPOLLOCK_sst.csv")
+```
+
+```{r}
+#| fig-width: 7
+#| fig-height: 9
+#| fig-align: center
+
+sst <- read.csv(sst) |>
+  dplyr::mutate(
+    SEASON = dplyr::case_when(
+      MONTH %in% c(1, 2, 3)    ~ "Winter",
+      MONTH %in% c(4, 5, 6)    ~ "Spring",
+      MONTH %in% c(7, 8, 9)    ~ "Summer",
+      MONTH %in% c(10, 11, 12) ~ "Fall"
+    )
+  ) |>
+  dplyr::group_by(AREA, SEASON, YEAR, INDICATOR_NAME, INDICATOR_UNITS) |>
+  dplyr::summarise(DATA_VALUE = mean(DATA_VALUE, na.rm = TRUE), .groups = "drop") |>
+  dplyr::mutate(INDICATOR_NAME = "seasonal_bottomT") |>
+  dplyr::filter(YEAR >= 1970)
+
+NEesp2::plt_indicator(
+  data = sst,
+  ar = 1/4,
+  include_trends = FALSE
+) +
+  ggplot2::facet_grid(SEASON ~ .,
+                      scales = "free_y") +
+  ggplot2::geom_smooth(method = "lm", se = FALSE, color = "purple", linetype = "solid") +
+  ggplot2::geom_line() +
+  ggplot2::geom_point() 
+
+```
+
+## Advection Index
+
+Larvae and juveniles drift with currents, away from spawning grounds in the Gulf of Maine and Scotian Shelf. Larval phase lasts around 4 months from September to April, depending on time of spawning. 
+
+```{r advection}
+ecodata::plot_advection(report = "NewEngland", n = 10, varName = 3) +
+  ggplot2::theme(legend.position = 'bottom')
+```
+
+
+## Food availability
+
+The primary prey of small larvae (4-18 mm) are larval copepods while larger larvae (> 18 mm) feed primarily on adult copepods.
+
+```{r zoo_index}
+#| fig-width: 8
+#| fig-height: 11
+#| fig-align: center
+
+large_copepod_plot <- ecodata::plot_zooplankton_index(
+  report = "NewEngland",
+  varName = "Lgcopeall",
+  n = 10
+) +
+  ggplot2::ylab("Relative Biomass") +
+  ggplot2::labs(title = "Large Copepods") +
+  ggplot2::theme(strip.text.x = ggplot2::element_text(size = 10))
+small_copepod_plot <- ecodata::plot_zooplankton_index(
+  report = "NewEngland",
+  varName = "Smallcopeall",
+  n = 10
+) +
+  ggplot2::ylab("Relative Biomass") +
+  ggplot2::labs(title = "Small Copepods") +
+  ggplot2::theme(strip.text.x = ggplot2::element_text(size = 10)) 
+euphausiid_plot <- ecodata::plot_zooplankton_index(
+  report = "NewEngland",
+  varName = "Euph",
+  n = 10
+) +
+  ggplot2::theme(
+    legend.background = ggplot2::element_rect(fill = "white")
+  ) +
+  ggplot2::ylab("Relative Biomass") +
+  ggplot2::labs(title = "Euphasiids") +
+  ggplot2::theme(strip.text.x = ggplot2::element_text(size = 10)) 
+ggpubr::ggarrange(
+  large_copepod_plot,
+  small_copepod_plot,
+  euphausiid_plot,
+  nrow = 3,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+```
+
+```{r cog}
+ecodata::plot_zooplankton_index(
+  varName = 'Smallcopeall',
+  plottype = 'cog',
+  n = 10
+) +
+  ggplot2::ggtitle("Northeast U.S. Small Copepod Distribution") +
+  ggplot2::ylab("Center of Gravity, km") 
+
+ecodata::plot_zooplankton_index(
+  varName = 'Lgcopeall',
+  plottype = 'cog',
+  n = 10
+) +
+  ggplot2::ggtitle("Northeast U.S. Large Copepod Distribution") +
+  ggplot2::ylab("Center of Gravity, km") 
+
+ecodata::plot_zooplankton_index(
+  report = "NewEngland",
+  varName = 'Euph',
+  plottype = 'cog',
+  n = 10
+) +
+  ggplot2::ggtitle("Northeast U.S. Euphausiid Distribution") +
+  ggplot2::ylab("Center of Gravity, km") +
+  ggplot2::theme(legend.position = 'bottom') +
+  ggplot2::facet_grid(
+    cols = ggplot2::vars(Season),
+    rows = ggplot2::vars(Direction),
+    scales = "free_y"
+  )
+```
+
