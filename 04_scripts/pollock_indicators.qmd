@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 Commercial landings and revenue have hovered around -1 SD of the long term mean since 2015, with the exception for revenue in 2021. N vessels has steadily declined since the mid-2000s and is now below -1SD of the LT mean. Average price per pound and revenue per vessel have fluctuated in the past decade but have been near or above the LT mean.  
 
 ```{r pollock-socioeco}
-pollock_socioeco <- here::here("02_intermediates/ATLANTICPOLLOCK_Commercial_Indicators_Master.csv")
+pollock_socioeco <- here::here("01_inpupts/ATLANTICPOLLOCK_Commercial_Indicators_Master.csv")
 data <- read.csv(pollock_socioeco)
 ```
 
@@ -94,8 +94,8 @@ Small juveniles (YOY) move inshore in May and remain inshore until January, with
 Monthly BT in the stock area has a long-term increase for all months. Highest mean BT occur in Oct-Nov, around 9 deg C. 
 
 ```{r pollock-bt-data}
-url1 <- here::here("02_intermediates/ATLANTICPOLLOCK_hubert_bottomT.csv")
-url2 <- here::here("02_intermediates/ATLANTICPOLLOCK_glorys_bottomT.csv")
+url1 <- here::here("01_inputs/ATLANTICPOLLOCK_hubert_bottomT.csv")
+url2 <- here::here("01_inputs/ATLANTICPOLLOCK_glorys_bottomT.csv")
 ```
 
 ```{r, eval = file.exists(url1) & file.exists(url2), results='asis'}
@@ -135,7 +135,7 @@ NEesp2::plt_indicator(
 Spawning is linked to temperature between 4.5-8 degC. Spawning occurs from September - April on the Scotian Shelf and November - February in the Gulf of Maine. Spawning peaks in Dec/Jan. 
 
 ```{r}
-sst <- here::here("02_intermediates/ATLANTICPOLLOCK_sst.csv")
+sst <- here::here("01_inputs/ATLANTICPOLLOCK_sst.csv")
 ```
 
 ```{r}
