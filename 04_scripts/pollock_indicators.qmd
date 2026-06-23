@@ -175,7 +175,7 @@ NEesp2::plt_indicator(
 Larvae and juveniles drift with currents, away from spawning grounds in the Gulf of Maine and Scotian Shelf. Larval phase lasts around 4 months from September to April, depending on time of spawning. 
 
 ```{r advection}
-ecodata::plot_advection(report = "NewEngland", n = 10, varName = 3) +
+ecodata::plot_advection(report = "NewEngland", n = 10, varName = c(3:4)) +
   ggplot2::theme(legend.position = 'bottom')
 ```
 
