@@ -1,52 +1,34 @@
-
-# 1. Define the path to your 'SST' folder
+## import SST files ----
 sst_dir <- here::here('//nefscdata/EDAB_Datasets/OISST/V2/SOURCE/SST/')
 
-# 2. List all NetCDF files (.nc or .nc4) in that folder
-# 'full.names = TRUE' ensures the complete file path is retained
-nc_files <- list.files(path = sst_dir, 
-                       pattern = "\\.nc$", 
-                       full.names = TRUE, 
-                       ignore.case = TRUE)
+nc_files <- list.files(
+  path = sst_dir,
+  pattern = "\\.nc$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
 
-# Optional: Sort the files to ensure they are in chronological order (1981 to 2026)
-nc_files <- sort(nc_files)
+### load files ----
+## just doing 2 for testing
+sst_stack <- terra::rast(nc_files[1:2])
 
-# 3. Load all files at once into a multi-layer SpatRaster
-# terra::rast() automatically recognizes a vector of file paths and stacks them
-sst_stack <- terra::rast(nc_files)
+### subset to sept-apr months ----
+months <- which(stringr::str_detect(
+  terra::time(sst_stack),
+  "-(09|10|11|12|01|02|03|04)-"
+))
+sst_subset <- sst_stack |>
+  terra::subset(months)
 
+# check dates
+# 1981 is not a full year
+terra::time(sst_stack)
 
-# 2. Extract the dates and explicitly force them to standard R Dates
-all_dates <- as.Date(time(sst_stack))
+### create vector of years to assess ----
+years_vector <- lubridate::year(as.Date(terra::time(sst_subset))) |>
+  unique()
 
-# 3. Extract the month number (1 to 12) for each date
-months_vector <- lubridate::month(all_dates)
-
-# 4. Define your logical condition (September is 9, April is 4)
-# We want months >= 9 OR months <= 4
-sept_april_indices <- which(months_vector >= 9 | months_vector <= 4)
-
-# 5. Subset the SpatRaster using those indices
-sst_subset <- sst_stack[[sept_april_indices]]
-
-# 6. Check your work
-print(sst_subset)
-
-# 2. Extract the years for each remaining layer
-# Note: Because your season crosses the New Year (Sep-Apr), 
-# decide if you want to group by calendar year, or "winter season" year.
-# For standard calendar year grouping:
-years_vector <- year(as.Date(time(sst_subset)))
-
-# 3. Use tapp() to group by year and apply your calculation
-# 'fun' can be your custom function, or an anonymous function like below:
-yearly_days_below_8 <- terra::tapp(sst_subset, 
-                            index = years_vector)
-
-sst_converted <- EDABUtilities::convert_2d_longitude_gridded(data = sst_subset)
-
-#############################################
+## get shapefile info ----
 
 ## create stock shapefile from strata provided
 shp <- terra::vect(here::here('01_inputs', 'BTS_STRATA.shp'))
@@ -58,7 +40,7 @@ create_shp <- function(strata, orig_shp = shp) {
     terra::aggregate()
   # add dummy attribute so it works with edab_utils
   shp_out$region <- "stock_area"
-  
+
   return(shp_out)
 }
 
@@ -91,18 +73,37 @@ species_shp <- create_shp(
   orig_shp = shp
 )
 
+## loop through years to create output ----
+## this is SLOW
 
-data <- EDABUtilities::make_2d_deg_day_ts(
-  data.in = test,
-  var.name = "sst",
-  statistic = "nd",
-  ref.value = 8,
-  type = "below",
-  shp.file = species_shp,
-  area.names = "stock_area",
-  write.out = FALSE
-)
+nday_below_8 <- c()
+for (i in unique(years_vector)) {
+  this_dat <- sst_subset |>
+    terra::subset(which(stringr::str_detect(
+      terra::time(sst_subset),
+      as.character(i)
+    )))
 
+  sst_converted <- EDABUtilities::convert_2d_longitude_gridded(data = this_dat)
 
-nday_below_8 <- dplyr::bind_rows(data)
+  data <- EDABUtilities::make_2d_deg_day_ts(
+    data.in = sst_converted,
+    var.name = "sst",
+    statistic = "nd",
+    ref.value = 8,
+    type = "below",
+    shp.file = species_shp,
+    area.names = "stock_area",
+    write.out = FALSE
+  )
 
+  nday_below_8 <- dplyr::bind_rows(
+    nday_below_8,
+    data[[1]] |>
+      dplyr::mutate(year = i)
+  )
+}
+
+## save output ----
+
+write.csv(nday_below_8, here::here("03_outputs/nday_below_8.csv"))
