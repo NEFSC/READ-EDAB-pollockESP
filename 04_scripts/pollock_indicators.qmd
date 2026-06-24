@@ -135,7 +135,7 @@ NEesp2::plt_indicator(
 Spawning is linked to temperature between 4.5-8 degC. Spawning occurs from September - April on the Scotian Shelf and November - February in the Gulf of Maine. Spawning peaks in Dec/Jan. 
 
 ```{r}
-sst <- here::here("01_inputs/ATLANTICPOLLOCK_sst.csv")
+nday_below_8 <- read.csv(here::here('03_outputs/nday_below_8.csv'))
 ```
 
 ```{r}
@@ -143,30 +143,13 @@ sst <- here::here("01_inputs/ATLANTICPOLLOCK_sst.csv")
 #| fig-height: 9
 #| fig-align: center
 
-sst <- read.csv(sst) |>
-  dplyr::mutate(
-    SEASON = dplyr::case_when(
-      MONTH %in% c(1, 2, 3)    ~ "Winter",
-      MONTH %in% c(4, 5, 6)    ~ "Spring",
-      MONTH %in% c(7, 8, 9)    ~ "Summer",
-      MONTH %in% c(10, 11, 12) ~ "Fall"
-    )
-  ) |>
-  dplyr::group_by(AREA, SEASON, YEAR, INDICATOR_NAME, INDICATOR_UNITS) |>
-  dplyr::summarise(DATA_VALUE = mean(DATA_VALUE, na.rm = TRUE), .groups = "drop") |>
-  dplyr::mutate(INDICATOR_NAME = "seasonal_bottomT") |>
-  dplyr::filter(YEAR >= 1970)
+nday_formatted <- nday_below_8 |>
+  dplyr::rename(YEAR = year,
+                DATA_VALUE = value,
+                INDICATOR_NAME = statistic) |>
+  dplyr::mutate(INDICATOR_NAME = 'nd_below_8c')
 
-NEesp2::plt_indicator(
-  data = sst,
-  ar = 1/4,
-  include_trends = FALSE
-) +
-  ggplot2::facet_grid(SEASON ~ .,
-                      scales = "free_y") +
-  ggplot2::geom_smooth(method = "lm", se = FALSE, color = "purple", linetype = "solid") +
-  ggplot2::geom_line() +
-  ggplot2::geom_point() 
+NEesp2::plt_indicator(data = nday_formatted, include_trends = TRUE)
 
 ```
 
