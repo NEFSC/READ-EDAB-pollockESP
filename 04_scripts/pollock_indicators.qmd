@@ -144,6 +144,7 @@ nday_below_8 <- read.csv(here::here('03_outputs/nday_below_8.csv'))
 #| fig-align: center
 
 nday_formatted <- nday_below_8 |>
+  dplyr::filter(!year %in% c(1981, 2025, 2026)) |>
   dplyr::rename(YEAR = year,
                 DATA_VALUE = value,
                 INDICATOR_NAME = statistic) |>

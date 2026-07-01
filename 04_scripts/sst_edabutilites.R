@@ -90,7 +90,7 @@ for (i in unique(years_vector)) {
   data <- EDABUtilities::make_2d_deg_day_ts(
     data.in = sst_converted,
     var.name = "sst",
-    statistic = "nd",
+    metric = "nd",
     ref.value = 8,
     type = "below",
     shp.file = species_shp,
@@ -111,12 +111,17 @@ write.csv(nday_below_8, here::here("03_outputs/nday_below_8.csv"))
 
 ## plot
 
-nday_formatted <- nday_below_8 |>
+nday_formatted <- nday_below_8_fullyears |>
   dplyr::rename(YEAR = year,
                 DATA_VALUE = value,
                 INDICATOR_NAME = statistic) |>
   dplyr::mutate(INDICATOR_NAME = 'nd_below_8c')
 
 NEesp2::plt_indicator(data = nday_formatted, include_trends = TRUE)
+
+## remove 1981, 2025, and 2026 
+
+nday_below_8_fullyears <- read.csv(here::here("03_outputs/nday_below_8.csv")) |>
+  dplyr::filter(!year %in% c(1981, 2025, 2026))
 
 
