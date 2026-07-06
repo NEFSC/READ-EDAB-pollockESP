@@ -11,6 +11,7 @@ nc_files <- list.files(
 
 ### load files ----
 sst_stack <- terra::rast(nc_files[1:46])
+#sst_25 <- terra::rast(here::here('01_inputs/SST/new.sst.day.mean.2025.nc'))
 
 ### subset to sept-apr months ----
 months <- which(stringr::str_detect(
@@ -23,6 +24,7 @@ sst_subset <- sst_stack |>
 # check dates
 # 1981 is not a full year
 terra::time(sst_stack)
+#sst_25
 
 ### create vector of years to assess ----
 years_vector <- lubridate::year(as.Date(terra::time(sst_subset))) |>
@@ -105,23 +107,24 @@ for (i in unique(years_vector)) {
   )
 }
 
+
 ## save output ----
 
 write.csv(nday_below_8, here::here("03_outputs/nday_below_8.csv"))
 
 ## plot
 
-nday_formatted <- nday_below_8_fullyears |>
+nday_formatted <- nday_below_8_removed |>
   dplyr::rename(YEAR = year,
                 DATA_VALUE = value,
-                INDICATOR_NAME = statistic) |>
+                INDICATOR_NAME = metric) |>
   dplyr::mutate(INDICATOR_NAME = 'nd_below_8c')
 
 NEesp2::plt_indicator(data = nday_formatted, include_trends = TRUE)
 
 ## remove 1981, 2025, and 2026 
 
-nday_below_8_fullyears <- read.csv(here::here("03_outputs/nday_below_8.csv")) |>
-  dplyr::filter(!year %in% c(1981, 2025, 2026))
+nday_below_8_removed <- read.csv(here::here("03_outputs/nday_below_8.csv")) |>
+  dplyr::filter(!year %in% c(1981, 2026))
 
 
